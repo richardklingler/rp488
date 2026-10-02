@@ -1,9 +1,12 @@
-#include <stdio.h>
+#include <ctype.h>
+#include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "pico/stdlib.h"
 #include "pico/stdio_usb.h"
-#include "pico/time.h"
+#include "pico/stdlib.h"
 
 #define GPIB_DIO_BASE 0u
 #define GPIB_DIO_MASK 0xFFu
@@ -25,91 +28,400 @@
                         (1u << GPIB_IFC_PIN) | (1u << GPIB_REN_PIN) | \
                         (1u << GPIB_TE_PIN) | (1u << GPIB_PE_PIN) | \
                         (1u << GPIB_DC_PIN))
+#define GPIB_TIMEOUT_MS 3000u
+#define USB_LINE_SIZE 256u
+#define GPIB_DEFAULT_ADDRESS 8u
+
+static uint8_t gpib_address = GPIB_DEFAULT_ADDRESS;
+static uint8_t gpib_eos = 0u;
+static bool gpib_eoi_enabled = true;
+static bool gpib_auto_read = false;
+static uint32_t gpib_read_timeout_ms = GPIB_TIMEOUT_MS;
+
+static void gpib_output(uint pin, bool high)
+{
+    gpio_put(pin, high ? 1u : 0u);
+    gpio_set_dir(pin, GPIO_OUT);
+}
+
+static bool gpib_wait_level(uint pin, bool high, uint32_t timeout_ms)
+{
+    uint64_t deadline = time_us_64() + (uint64_t)timeout_ms * 1000u;
+    while ((gpio_get(pin) != 0u) != high) {
+        if (time_us_64() >= deadline) {
+            return false;
+        }
+        tight_loop_contents();
+    }
+    return true;
+}
+
+static void gpib_set_talker(void)
+{
+    gpio_put_masked(GPIB_DIO_MASK, GPIB_DIO_MASK);
+    gpio_put(GPIB_DAV_PIN, 1u);
+    gpio_put(GPIB_EOI_PIN, 1u);
+    gpio_put(GPIB_NRFD_PIN, 0u);
+    gpio_put(GPIB_NDAC_PIN, 0u);
+
+    gpio_set_dir(GPIB_NRFD_PIN, GPIO_IN);
+    gpio_set_dir(GPIB_NDAC_PIN, GPIO_IN);
+    gpio_put(GPIB_TE_PIN, 1u);
+
+    for (uint gpio = GPIB_DIO_BASE; gpio < GPIB_DIO_BASE + 8u; ++gpio) {
+        gpio_set_dir(gpio, GPIO_OUT);
+    }
+    gpio_set_dir(GPIB_DAV_PIN, GPIO_OUT);
+    gpio_set_dir(GPIB_EOI_PIN, GPIO_OUT);
+}
+
+static void gpib_set_listener(void)
+{
+    gpio_put(GPIB_DAV_PIN, 1u);
+    gpio_put(GPIB_EOI_PIN, 1u);
+    gpio_put_masked(GPIB_DIO_MASK, GPIB_DIO_MASK);
+    for (uint gpio = GPIB_DIO_BASE; gpio < GPIB_DIO_BASE + 8u; ++gpio) {
+        gpio_set_dir(gpio, GPIO_IN);
+    }
+    gpio_set_dir(GPIB_DAV_PIN, GPIO_IN);
+    gpio_set_dir(GPIB_EOI_PIN, GPIO_IN);
+
+    gpib_output(GPIB_NRFD_PIN, false);
+    gpib_output(GPIB_NDAC_PIN, false);
+    gpio_put(GPIB_TE_PIN, 0u);
+}
 
 static void gpib_gpio_init(void)
 {
     gpio_init_mask(GPIB_DIO_MASK | GPIB_CTRL_MASK);
 
-    for (uint gpio = GPIB_DIO_BASE; gpio < GPIB_DIO_BASE + 8; ++gpio) {
-        gpio_set_dir(gpio, GPIO_OUT);
-        gpio_put(gpio, 1);
-    }
-
-    gpio_set_dir(GPIB_DAV_PIN, GPIO_OUT);
-    gpio_put(GPIB_DAV_PIN, 1);
-    gpio_set_dir(GPIB_NRFD_PIN, GPIO_OUT);
-    gpio_put(GPIB_NRFD_PIN, 1);
-    gpio_set_dir(GPIB_NDAC_PIN, GPIO_OUT);
-    gpio_put(GPIB_NDAC_PIN, 1);
-    gpio_set_dir(GPIB_EOI_PIN, GPIO_OUT);
-    gpio_put(GPIB_EOI_PIN, 1);
-    gpio_set_dir(GPIB_ATN_PIN, GPIO_OUT);
-    gpio_put(GPIB_ATN_PIN, 1);
-    gpio_set_dir(GPIB_IFC_PIN, GPIO_OUT);
-    gpio_put(GPIB_IFC_PIN, 1);
-    gpio_set_dir(GPIB_REN_PIN, GPIO_OUT);
-    gpio_put(GPIB_REN_PIN, 1);
-    gpio_set_dir(GPIB_TE_PIN, GPIO_OUT);
-    gpio_put(GPIB_TE_PIN, 1);
-    gpio_set_dir(GPIB_PE_PIN, GPIO_OUT);
-    gpio_put(GPIB_PE_PIN, 1);
-    gpio_set_dir(GPIB_DC_PIN, GPIO_OUT);
-    gpio_put(GPIB_DC_PIN, 1);
-
+    gpib_output(GPIB_DC_PIN, false);
+    gpib_output(GPIB_PE_PIN, true);
+    gpib_output(GPIB_ATN_PIN, true);
+    gpib_output(GPIB_IFC_PIN, true);
+    gpib_output(GPIB_REN_PIN, true);
+    gpib_output(GPIB_TE_PIN, false);
     gpio_set_dir(GPIB_SRQ_PIN, GPIO_IN);
-    gpio_pull_down(GPIB_SRQ_PIN);
+    gpio_set_dir(GPIB_DAV_PIN, GPIO_IN);
+    gpio_set_dir(GPIB_EOI_PIN, GPIO_IN);
+    for (uint gpio = GPIB_DIO_BASE; gpio < GPIB_DIO_BASE + 8u; ++gpio) {
+        gpio_set_dir(gpio, GPIO_IN);
+    }
+
+    gpib_set_listener();
+    gpio_put(GPIB_IFC_PIN, 0u);
+    sleep_us(100u);
+    gpio_put(GPIB_IFC_PIN, 1u);
 }
 
-static void gpib_bus_idle(void)
+static bool gpib_write_byte(uint8_t byte, bool eoi)
 {
-    gpio_put(GPIB_ATN_PIN, 1);
-    gpio_put(GPIB_REN_PIN, 1);
-    gpio_put(GPIB_IFC_PIN, 0);
-    sleep_us(100);
-    gpio_put(GPIB_IFC_PIN, 1);
-    gpio_put(GPIB_DC_PIN, 1);
-    gpio_put(GPIB_TE_PIN, 1);
-    gpio_put(GPIB_PE_PIN, 1);
+    if (!gpib_wait_level(GPIB_NRFD_PIN, true, GPIB_TIMEOUT_MS)) {
+        return false;
+    }
+
+    gpio_put_masked(GPIB_DIO_MASK, (uint8_t)~byte);
+    gpio_put(GPIB_EOI_PIN, eoi ? 0u : 1u);
+    busy_wait_us(2u);
+    gpio_put(GPIB_DAV_PIN, 0u);
+
+    if (!gpib_wait_level(GPIB_NDAC_PIN, true, GPIB_TIMEOUT_MS)) {
+        gpio_put(GPIB_DAV_PIN, 1u);
+        gpio_put(GPIB_EOI_PIN, 1u);
+        return false;
+    }
+
+    gpio_put(GPIB_DAV_PIN, 1u);
+    gpio_put(GPIB_EOI_PIN, 1u);
+    return gpib_wait_level(GPIB_NDAC_PIN, false, GPIB_TIMEOUT_MS);
 }
 
-static inline uint8_t gpib_invert_byte(uint8_t v)
+static bool gpib_read_byte(uint8_t *byte, bool *eoi)
 {
-    return (uint8_t)(~v);
+    gpio_put(GPIB_NRFD_PIN, 1u);
+    if (!gpib_wait_level(GPIB_DAV_PIN, false, gpib_read_timeout_ms)) {
+        gpio_put(GPIB_NRFD_PIN, 0u);
+        return false;
+    }
+
+    gpio_put(GPIB_NRFD_PIN, 0u);
+    *byte = (uint8_t)~gpio_get_all();
+    *eoi = gpio_get(GPIB_EOI_PIN) == 0u;
+    gpio_put(GPIB_NDAC_PIN, 1u);
+
+    if (!gpib_wait_level(GPIB_DAV_PIN, true, gpib_read_timeout_ms)) {
+        gpio_put(GPIB_NDAC_PIN, 0u);
+        return false;
+    }
+
+    gpio_put(GPIB_NDAC_PIN, 0u);
+    return true;
 }
 
-static void gpib_write_byte(uint8_t byte)
+static bool gpib_send_commands(const uint8_t *commands, size_t count)
 {
-    for (uint gpio = GPIB_DIO_BASE; gpio < GPIB_DIO_BASE + 8; ++gpio) {
-        gpio_put(gpio, (gpib_invert_byte(byte) >> (gpio - GPIB_DIO_BASE)) & 1u);
+    gpib_set_talker();
+    gpio_put(GPIB_ATN_PIN, 0u);
+    for (size_t i = 0; i < count; ++i) {
+        if (!gpib_write_byte(commands[i], false)) {
+            gpio_put(GPIB_ATN_PIN, 1u);
+            gpib_set_listener();
+            return false;
+        }
+    }
+    gpio_put(GPIB_ATN_PIN, 1u);
+    return true;
+}
+
+static bool gpib_address_for_write(void)
+{
+    const uint8_t commands[] = {0x3Fu, (uint8_t)(0x20u + gpib_address), 0x40u};
+    return gpib_send_commands(commands, sizeof(commands));
+}
+
+static bool gpib_address_for_read(void)
+{
+    const uint8_t commands[] = {0x3Fu, (uint8_t)(0x40u + gpib_address), 0x20u};
+    if (!gpib_send_commands(commands, sizeof(commands))) {
+        return false;
+    }
+    gpib_set_listener();
+    return true;
+}
+
+static bool gpib_read_stream(bool stop_on_eoi, int terminator)
+{
+    if (!gpib_address_for_read()) {
+        return false;
+    }
+
+    for (;;) {
+        uint8_t byte;
+        bool eoi;
+        if (!gpib_read_byte(&byte, &eoi)) {
+            return false;
+        }
+        putchar_raw(byte);
+        if ((stop_on_eoi && eoi) || (!stop_on_eoi && byte == (uint8_t)terminator)) {
+            return true;
+        }
     }
 }
 
-static uint8_t gpib_read_byte(void)
+static bool gpib_write_text(const char *text)
 {
-    uint8_t value = 0u;
-    for (uint gpio = GPIB_DIO_BASE; gpio < GPIB_DIO_BASE + 8; ++gpio) {
-        value |= ((gpio_get(gpio) & 1u) << (gpio - GPIB_DIO_BASE));
+    size_t length = strlen(text);
+    size_t eos_length = gpib_eos == 0u ? 2u : (gpib_eos == 3u ? 0u : 1u);
+    size_t total = length + eos_length;
+    if (total == 0u || !gpib_address_for_write()) {
+        gpib_set_listener();
+        return total == 0u;
     }
-    return gpib_invert_byte(value);
+
+    for (size_t i = 0; i < total; ++i) {
+        uint8_t byte;
+        if (i < length) {
+            byte = (uint8_t)text[i];
+        } else if (gpib_eos == 0u) {
+            byte = i == length ? '\r' : '\n';
+        } else {
+            byte = gpib_eos == 1u ? '\r' : '\n';
+        }
+        if (!gpib_write_byte(byte, gpib_eoi_enabled && i + 1u == total)) {
+            gpib_set_listener();
+            return false;
+        }
+    }
+
+    gpib_set_listener();
+    return true;
+}
+
+static bool gpib_serial_poll(uint8_t address, uint8_t *status)
+{
+    const uint8_t commands[] = {0x3Fu, 0x18u, (uint8_t)(0x40u + address), 0x20u};
+    if (!gpib_send_commands(commands, sizeof(commands))) {
+        return false;
+    }
+
+    gpib_set_listener();
+    bool eoi;
+    if (!gpib_read_byte(status, &eoi)) {
+        return false;
+    }
+
+    const uint8_t finish[] = {0x19u, 0x5Fu};
+    return gpib_send_commands(finish, sizeof(finish));
+}
+
+static bool parse_uint(const char *text, uint32_t maximum, uint32_t *value)
+{
+    char *end;
+    unsigned long parsed = strtoul(text, &end, 10);
+    if (text == end || *end != '\0' || parsed > maximum) {
+        return false;
+    }
+    *value = (uint32_t)parsed;
+    return true;
+}
+
+static void report_bus_error(void)
+{
+    puts("ERR: GPIB handshake timeout");
+    gpib_set_listener();
+}
+
+static void handle_adapter_command(char *line)
+{
+    char *command = strtok(line, " \t");
+    char *argument = strtok(NULL, " \t");
+    uint32_t value;
+
+    if (command == NULL) {
+        return;
+    }
+    if (strcmp(command, "++ver") == 0) {
+        puts("BusLink RP2350 GPIB adapter 0.1");
+    } else if (strcmp(command, "++addr") == 0) {
+        if (argument == NULL) {
+            printf("%u\r\n", gpib_address);
+        } else if (parse_uint(argument, 30u, &value)) {
+            gpib_address = (uint8_t)value;
+        } else {
+            puts("ERR: address must be 0-30");
+        }
+    } else if (strcmp(command, "++auto") == 0) {
+        if (argument == NULL) {
+            printf("%u\r\n", gpib_auto_read ? 1u : 0u);
+        } else if (parse_uint(argument, 1u, &value)) {
+            gpib_auto_read = value != 0u;
+        } else {
+            puts("ERR: auto must be 0 or 1");
+        }
+    } else if (strcmp(command, "++eoi") == 0) {
+        if (argument == NULL) {
+            printf("%u\r\n", gpib_eoi_enabled ? 1u : 0u);
+        } else if (parse_uint(argument, 1u, &value)) {
+            gpib_eoi_enabled = value != 0u;
+        } else {
+            puts("ERR: eoi must be 0 or 1");
+        }
+    } else if (strcmp(command, "++eos") == 0) {
+        if (argument == NULL) {
+            printf("%u\r\n", gpib_eos);
+        } else if (parse_uint(argument, 3u, &value)) {
+            gpib_eos = (uint8_t)value;
+        } else {
+            puts("ERR: eos must be 0-3");
+        }
+    } else if (strcmp(command, "++read_tmo_ms") == 0) {
+        if (argument == NULL) {
+            printf("%lu\r\n", (unsigned long)gpib_read_timeout_ms);
+        } else if (parse_uint(argument, 60000u, &value) && value > 0u) {
+            gpib_read_timeout_ms = value;
+        } else {
+            puts("ERR: timeout must be 1-60000 ms");
+        }
+    } else if (strcmp(command, "++ifc") == 0) {
+        gpio_put(GPIB_IFC_PIN, 0u);
+        sleep_us(100u);
+        gpio_put(GPIB_IFC_PIN, 1u);
+    } else if (strcmp(command, "++srq") == 0) {
+        printf("%u\r\n", gpio_get(GPIB_SRQ_PIN) == 0u ? 1u : 0u);
+    } else if (strcmp(command, "++read") == 0) {
+        bool stop_on_eoi = argument == NULL || strcmp(argument, "eoi") == 0;
+        int terminator = argument == NULL ? '\n' : (unsigned char)argument[0];
+        if (!gpib_read_stream(stop_on_eoi, terminator)) {
+            report_bus_error();
+        }
+    } else if (strcmp(command, "++spoll") == 0) {
+        uint32_t address = gpib_address;
+        uint8_t status;
+        if (argument != NULL && !parse_uint(argument, 30u, &address)) {
+            puts("ERR: address must be 0-30");
+        } else if (!gpib_serial_poll((uint8_t)address, &status)) {
+            report_bus_error();
+        } else {
+            printf("%u\r\n", status);
+        }
+    } else if (strcmp(command, "++clr") == 0 || strcmp(command, "++loc") == 0) {
+        uint8_t addressed_command = strcmp(command, "++clr") == 0 ? 0x04u : 0x01u;
+        const uint8_t commands[] = {0x3Fu, (uint8_t)(0x20u + gpib_address), addressed_command};
+        if (!gpib_send_commands(commands, sizeof(commands))) {
+            report_bus_error();
+        } else {
+            gpib_set_listener();
+        }
+    } else if (strcmp(command, "++llo") == 0) {
+        const uint8_t commands[] = {0x11u};
+        if (!gpib_send_commands(commands, sizeof(commands))) {
+            report_bus_error();
+        } else {
+            gpib_set_listener();
+        }
+    } else if (strcmp(command, "++mode") == 0) {
+        if (argument == NULL || strcmp(argument, "1") == 0) {
+            puts("1");
+        } else {
+            puts("ERR: controller mode only");
+        }
+    } else {
+        puts("ERR: unsupported command");
+    }
+}
+
+static void handle_usb_line(char *line)
+{
+    while (*line != '\0' && isspace((unsigned char)*line)) {
+        ++line;
+    }
+    size_t length = strlen(line);
+    while (length > 0u && isspace((unsigned char)line[length - 1u])) {
+        line[--length] = '\0';
+    }
+    if (length == 0u) {
+        return;
+    }
+
+    if (strncmp(line, "++", 2u) == 0) {
+        handle_adapter_command(line);
+    } else if (!gpib_write_text(line)) {
+        report_bus_error();
+    } else if (gpib_auto_read && !gpib_read_stream(true, '\n')) {
+        report_bus_error();
+    }
 }
 
 int main(void)
 {
-    stdio_init_all();
+    char line[USB_LINE_SIZE];
+    size_t line_length = 0u;
+    bool line_overflow = false;
 
+    stdio_init_all();
     gpib_gpio_init();
-    gpib_bus_idle();
 
     while (true) {
-        if (stdio_usb_connected()) {
-            int ch = getchar_timeout_us(0);
-            if (ch != PICO_ERROR_TIMEOUT) {
-                putchar_raw((char)ch);
+        int ch = getchar_timeout_us(0u);
+        if (ch == PICO_ERROR_TIMEOUT) {
+            tight_loop_contents();
+            continue;
+        }
+        if (ch == '\r' || ch == '\n') {
+            if (line_length > 0u && !line_overflow) {
+                line[line_length] = '\0';
+                handle_usb_line(line);
+            } else if (line_overflow) {
+                puts("ERR: command too long");
+            }
+            line_length = 0u;
+            line_overflow = false;
+        } else if (!line_overflow) {
+            if (line_length + 1u < sizeof(line)) {
+                line[line_length++] = (char)ch;
+            } else {
+                line_overflow = true;
             }
         }
-
-        sleep_ms(1);
     }
-
-    return 0;
 }
