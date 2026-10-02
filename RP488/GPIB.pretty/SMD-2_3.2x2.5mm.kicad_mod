@@ -1,0 +1,200 @@
+(footprint "SMD-2_3.2x2.5mm"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "http://www.ndk.com/images/products/catalog/c_NX3225GD-STD-CRA-3_e.pdf")
+	(property "Reference" "REF**"
+		(at -2.86 -0.254 90)
+		(layer "F.SilkS")
+		(uuid "8d4aaaa2-3a88-44f0-9548-ab493cded946")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "NX3225GD-8MHZ"
+		(at 0 2.67 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "d3b3ce8a-b0fd-4b4c-ae6b-5ee1a7fc0153")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "c2a9ab74-182c-4f44-b17a-6e927bd956f0")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "9e9110f0-5c5f-4867-8d56-912b2c9ec8ca")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -0.5 1.5)
+		(end 0 1.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "53e4f611-8745-4ea2-a5f0-d1107195b47d")
+	)
+	(fp_line
+		(start 0 -1.5)
+		(end -0.5 -1.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "887bd8f0-6ae7-4003-a681-2a9ea65498f4")
+	)
+	(fp_line
+		(start 0 -1.5)
+		(end 0.5 -1.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "a4558bb6-424f-431d-9277-5b051c02e9f2")
+	)
+	(fp_line
+		(start 0 1.5)
+		(end 0.5 1.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "58a1340b-20d5-433e-949d-979459a59a83")
+	)
+	(fp_line
+		(start -1.95 -1.6)
+		(end -1.95 1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "1f638465-297c-4e23-9c53-b3847e1f663b")
+	)
+	(fp_line
+		(start 1.95 -1.6)
+		(end -1.95 -1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "8905f025-f706-4b89-9a8a-c093ec7c2af6")
+	)
+	(fp_line
+		(start 1.95 -1.6)
+		(end 1.95 1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "92034cc2-dc48-4cda-a744-72ee760bc806")
+	)
+	(fp_line
+		(start 1.95 1.6)
+		(end -1.95 1.6)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "aa9ea2bd-141d-4519-82b1-bfc80eef8201")
+	)
+	(fp_line
+		(start -1.6 -1.35)
+		(end -1.6 1.35)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "33129d4f-2b46-49c6-a60b-f532c57ac10b")
+	)
+	(fp_line
+		(start -1.6 -1.35)
+		(end 1.6 -1.35)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "8bcd3fd7-4023-4d84-8535-7a362a9e449d")
+	)
+	(fp_line
+		(start -1.6 1.35)
+		(end 1.6 1.35)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "f52b6b67-9b8e-415f-aa6c-7c991574b4c2")
+	)
+	(fp_line
+		(start 1.6 -1.35)
+		(end 1.6 1.35)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c41e3c99-bbce-4ae5-8e7c-e6e6ad9dcc8e")
+	)
+	(pad "1" smd rect
+		(at -0.95 0)
+		(size 1.5 2.7)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "7fbb5d50-8f7c-4125-88be-1eacc5b4b50d")
+	)
+	(pad "2" smd rect
+		(at 0.95 0)
+		(size 1.5 2.7)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "4fb81d27-4879-4d33-a82c-710b7f7c2010")
+	)
+	(embedded_fonts no)
+	(model "${KISYS3DMOD}/Crystal.3dshapes/Crystal_SMD_SeikoEpson_FA238-4Pin_3.2x2.5mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

@@ -881,7 +881,7 @@
         "uuid": "3b6c71c4-8a93-4466-8fec-b87af057059d"
       }
     ],
-    "used_designators": "C5-6,R1-3,Y1,P1,U3-4",
+    "used_designators": "XTAL1,P1,U3-6,Y1,R1-6,D1-2,C5-13,#PWR1-10,#PWR106-107,#PWR112-115,#PWR121-132,J2-3,L1",
     "variants": []
   },
   "sheets": [
