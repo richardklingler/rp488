@@ -35,6 +35,12 @@ cmake --build build
 
 The generated binary is intended for the Pico 2 W with the GPIB interface board described in the implementation guide.
 
+## License
+
+Original hardware design files use CERN-OHL-S-2.0; firmware and software use
+MIT. See [LICENSE.md](LICENSE.md) for scope details and links to the license
+texts. Third-party materials retain their own licenses.
+
 ## Binary block transfers
 
 The firmware supports streaming IEEE definite-length blocks over the CDC
