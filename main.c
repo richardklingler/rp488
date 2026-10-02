@@ -31,12 +31,22 @@
 #define GPIB_TIMEOUT_MS 3000u
 #define USB_LINE_SIZE 256u
 #define GPIB_DEFAULT_ADDRESS 8u
+#define GPIB_MAX_BINARY_LENGTH (16u * 1024u * 1024u)
 
 static uint8_t gpib_address = GPIB_DEFAULT_ADDRESS;
 static uint8_t gpib_eos = 0u;
 static bool gpib_eoi_enabled = true;
 static bool gpib_auto_read = false;
 static uint32_t gpib_read_timeout_ms = GPIB_TIMEOUT_MS;
+static const char *gpib_phase = "idle";
+static const char *gpib_timeout_reason = "none";
+static uint32_t gpib_timeout_gpio_state;
+
+static void gpib_note_timeout(const char *reason)
+{
+    gpib_timeout_reason = reason;
+    gpib_timeout_gpio_state = gpio_get_all();
+}
 
 static void gpib_output(uint pin, bool high)
 {
@@ -117,6 +127,7 @@ static void gpib_gpio_init(void)
 static bool gpib_write_byte(uint8_t byte, bool eoi)
 {
     if (!gpib_wait_level(GPIB_NRFD_PIN, true, GPIB_TIMEOUT_MS)) {
+        gpib_note_timeout("NRFD did not release");
         return false;
     }
 
@@ -128,12 +139,17 @@ static bool gpib_write_byte(uint8_t byte, bool eoi)
     if (!gpib_wait_level(GPIB_NDAC_PIN, true, GPIB_TIMEOUT_MS)) {
         gpio_put(GPIB_DAV_PIN, 1u);
         gpio_put(GPIB_EOI_PIN, 1u);
+        gpib_note_timeout("NDAC did not release after DAV assertion");
         return false;
     }
 
     gpio_put(GPIB_DAV_PIN, 1u);
     gpio_put(GPIB_EOI_PIN, 1u);
-    return gpib_wait_level(GPIB_NDAC_PIN, false, GPIB_TIMEOUT_MS);
+    if (!gpib_wait_level(GPIB_NDAC_PIN, false, GPIB_TIMEOUT_MS)) {
+        gpib_note_timeout("NDAC did not assert after DAV release");
+        return false;
+    }
+    return true;
 }
 
 static bool gpib_read_byte(uint8_t *byte, bool *eoi)
@@ -141,6 +157,7 @@ static bool gpib_read_byte(uint8_t *byte, bool *eoi)
     gpio_put(GPIB_NRFD_PIN, 1u);
     if (!gpib_wait_level(GPIB_DAV_PIN, false, gpib_read_timeout_ms)) {
         gpio_put(GPIB_NRFD_PIN, 0u);
+        gpib_note_timeout("DAV did not assert while listening");
         return false;
     }
 
@@ -151,6 +168,7 @@ static bool gpib_read_byte(uint8_t *byte, bool *eoi)
 
     if (!gpib_wait_level(GPIB_DAV_PIN, true, gpib_read_timeout_ms)) {
         gpio_put(GPIB_NDAC_PIN, 0u);
+        gpib_note_timeout("DAV did not release after accepting byte");
         return false;
     }
 
@@ -160,9 +178,10 @@ static bool gpib_read_byte(uint8_t *byte, bool *eoi)
 
 static bool gpib_send_commands(const uint8_t *commands, size_t count)
 {
-    gpib_set_talker();
     gpio_put(GPIB_ATN_PIN, 0u);
+    gpib_set_talker();
     for (size_t i = 0; i < count; ++i) {
+        gpib_phase = "GPIB command bytes";
         if (!gpib_write_byte(commands[i], false)) {
             gpio_put(GPIB_ATN_PIN, 1u);
             gpib_set_listener();
@@ -195,6 +214,7 @@ static bool gpib_read_stream(bool stop_on_eoi, int terminator)
         return false;
     }
 
+    gpib_phase = "instrument response";
     for (;;) {
         uint8_t byte;
         bool eoi;
@@ -208,6 +228,127 @@ static bool gpib_read_stream(bool stop_on_eoi, int terminator)
     }
 }
 
+static bool gpib_binary_write(uint32_t length)
+{
+    if (!gpib_address_for_write()) {
+        return false;
+    }
+
+    uint64_t deadline = time_us_64() + (uint64_t)gpib_read_timeout_ms * 1000u;
+    gpib_phase = "binary data";
+    for (uint32_t i = 0; i < length; ++i) {
+        int ch;
+        do {
+            ch = getchar_timeout_us(10000u);
+            if (ch == PICO_ERROR_TIMEOUT && time_us_64() >= deadline) {
+                gpib_set_listener();
+                return false;
+            }
+        } while (ch == PICO_ERROR_TIMEOUT);
+
+        if (!gpib_write_byte((uint8_t)ch, i + 1u == length)) {
+            gpib_set_listener();
+            return false;
+        }
+    }
+
+    gpib_set_listener();
+    return true;
+}
+
+static bool gpib_read_ieee_block(uint32_t maximum_length)
+{
+    uint8_t header[11];
+    uint8_t byte;
+    bool eoi;
+
+    if (!gpib_address_for_read()) {
+        gpib_set_listener();
+        puts("ERR: GPIB timeout before IEEE block");
+        return false;
+    }
+    if (!gpib_read_byte(&byte, &eoi)) {
+        gpib_set_listener();
+        puts("ERR: GPIB timeout before IEEE block");
+        return false;
+    }
+    if (byte != '#') {
+        gpib_set_listener();
+        puts("ERR: expected IEEE definite-length block");
+        return false;
+    }
+    header[0] = byte;
+
+    if (!gpib_read_byte(&byte, &eoi)) {
+        gpib_set_listener();
+        puts("ERR: GPIB timeout in IEEE block header");
+        return false;
+    }
+    if (byte < '1' || byte > '9') {
+        gpib_set_listener();
+        puts("ERR: expected IEEE definite-length block");
+        return false;
+    }
+    header[1] = byte;
+    uint8_t length_digits = (uint8_t)(byte - '0');
+    uint32_t payload_length = 0u;
+
+    for (uint8_t i = 0; i < length_digits; ++i) {
+        if (!gpib_read_byte(&byte, &eoi)) {
+            gpib_set_listener();
+            puts("ERR: GPIB timeout in IEEE block length");
+            return false;
+        }
+        if (byte < '0' || byte > '9') {
+            gpib_set_listener();
+            puts("ERR: invalid IEEE block length");
+            return false;
+        }
+        header[2u + i] = byte;
+        uint32_t digit = (uint32_t)(byte - '0');
+        if (payload_length > (UINT32_MAX - digit) / 10u) {
+            gpib_set_listener();
+            puts("ERR: IEEE block length overflow");
+            return false;
+        }
+        payload_length = payload_length * 10u + digit;
+    }
+
+    if (payload_length > maximum_length) {
+        gpib_set_listener();
+        puts("ERR: IEEE block exceeds requested maximum");
+        return false;
+    }
+
+    for (uint8_t i = 0; i < (uint8_t)(2u + length_digits); ++i) {
+        putchar_raw(header[i]);
+    }
+
+    for (uint32_t i = 0; i < payload_length; ++i) {
+        if (!gpib_read_byte(&byte, &eoi)) {
+            gpib_set_listener();
+            return false;
+        }
+        putchar_raw(byte);
+    }
+
+    if (!eoi) {
+        for (uint8_t trailing = 0; trailing < 8u && !eoi; ++trailing) {
+            if (!gpib_read_byte(&byte, &eoi)) {
+                gpib_set_listener();
+                return false;
+            }
+        }
+        if (!eoi) {
+            gpib_set_listener();
+            return false;
+        }
+    }
+
+    gpib_set_listener();
+    return true;
+}
+
 static bool gpib_write_text(const char *text)
 {
     size_t length = strlen(text);
@@ -218,6 +359,7 @@ static bool gpib_write_text(const char *text)
         return total == 0u;
     }
 
+    gpib_phase = "SCPI data";
     for (size_t i = 0; i < total; ++i) {
         uint8_t byte;
         if (i < length) {
@@ -267,7 +409,9 @@ static bool parse_uint(const char *text, uint32_t maximum, uint32_t *value)
 
 static void report_bus_error(void)
 {
-    puts("ERR: GPIB handshake timeout");
+    printf("ERR: GPIB timeout during %s: %s (GPIO=0x%08lx)\r\n",
+           gpib_phase, gpib_timeout_reason,
+           (unsigned long)gpib_timeout_gpio_state);
     gpib_set_listener();
 }
 
@@ -334,6 +478,21 @@ static void handle_adapter_command(char *line)
         if (!gpib_read_stream(stop_on_eoi, terminator)) {
             report_bus_error();
         }
+    } else if (strcmp(command, "++bin") == 0) {
+        char *operation = argument;
+        char *length_argument = strtok(NULL, " \t");
+        if (operation == NULL || length_argument == NULL ||
+            !parse_uint(length_argument, GPIB_MAX_BINARY_LENGTH, &value)) {
+            puts("ERR: use ++bin read <maxlen> or ++bin write <len>");
+        } else if (strcmp(operation, "write") == 0) {
+            if (!gpib_binary_write(value)) {
+                report_bus_error();
+            }
+        } else if (strcmp(operation, "read") == 0) {
+            (void)gpib_read_ieee_block(value);
+        } else {
+            puts("ERR: use ++bin read <maxlen> or ++bin write <len>");
+        }
     } else if (strcmp(command, "++spoll") == 0) {
         uint32_t address = gpib_address;
         uint8_t status;
@@ -387,7 +546,8 @@ static void handle_usb_line(char *line)
         handle_adapter_command(line);
     } else if (!gpib_write_text(line)) {
         report_bus_error();
-    } else if (gpib_auto_read && !gpib_read_stream(true, '\n')) {
+    } else if (gpib_auto_read && strchr(line, '?') != NULL &&
+               !gpib_read_stream(true, '\n')) {
         report_bus_error();
     }
 }
