@@ -21,6 +21,9 @@
 #define GPIB_TE_PIN 16u
 #define GPIB_PE_PIN 17u
 #define GPIB_DC_PIN 18u
+#define LED_ACTIVITY_PIN 19u
+#define LED_ERROR_PIN 20u
+#define LED_ACTIVITY_PULSE_US 100000u
 
 #define GPIB_CTRL_MASK ((1u << GPIB_DAV_PIN) | (1u << GPIB_NRFD_PIN) | \
                         (1u << GPIB_NDAC_PIN) | (1u << GPIB_EOI_PIN) | \
@@ -41,11 +44,30 @@ static uint32_t gpib_read_timeout_ms = GPIB_TIMEOUT_MS;
 static const char *gpib_phase = "idle";
 static const char *gpib_timeout_reason = "none";
 static uint32_t gpib_timeout_gpio_state;
+static uint64_t activity_led_deadline_us;
+
+static void activity_led_pulse(void)
+{
+    activity_led_deadline_us = time_us_64() + LED_ACTIVITY_PULSE_US;
+    gpio_put(LED_ACTIVITY_PIN, 1u);
+}
+
+static void error_led_set(bool on)
+{
+    gpio_put(LED_ERROR_PIN, on ? 1u : 0u);
+}
+
+static void report_adapter_error(const char *message)
+{
+    error_led_set(true);
+    puts(message);
+}
 
 static void gpib_note_timeout(const char *reason)
 {
     gpib_timeout_reason = reason;
     gpib_timeout_gpio_state = gpio_get_all();
+    error_led_set(true);
 }
 
 static void gpib_output(uint pin, bool high)
@@ -103,7 +125,8 @@ static void gpib_set_listener(void)
 
 static void gpib_gpio_init(void)
 {
-    gpio_init_mask(GPIB_DIO_MASK | GPIB_CTRL_MASK);
+    gpio_init_mask(GPIB_DIO_MASK | GPIB_CTRL_MASK |
+                   (1u << LED_ACTIVITY_PIN) | (1u << LED_ERROR_PIN));
 
     gpib_output(GPIB_DC_PIN, false);
     gpib_output(GPIB_PE_PIN, true);
@@ -112,6 +135,10 @@ static void gpib_gpio_init(void)
     gpib_output(GPIB_REN_PIN, true);
     gpib_output(GPIB_TE_PIN, false);
     gpio_set_dir(GPIB_SRQ_PIN, GPIO_IN);
+    gpio_set_dir(LED_ACTIVITY_PIN, GPIO_OUT);
+    gpio_put(LED_ACTIVITY_PIN, 0u);
+    gpio_set_dir(LED_ERROR_PIN, GPIO_OUT);
+    gpio_put(LED_ERROR_PIN, 0u);
     gpio_set_dir(GPIB_DAV_PIN, GPIO_IN);
     gpio_set_dir(GPIB_EOI_PIN, GPIO_IN);
     for (uint gpio = GPIB_DIO_BASE; gpio < GPIB_DIO_BASE + 8u; ++gpio) {
@@ -149,6 +176,7 @@ static bool gpib_write_byte(uint8_t byte, bool eoi)
         gpib_note_timeout("NDAC did not assert after DAV release");
         return false;
     }
+    activity_led_pulse();
     return true;
 }
 
@@ -173,6 +201,7 @@ static bool gpib_read_byte(uint8_t *byte, bool *eoi)
     }
 
     gpio_put(GPIB_NDAC_PIN, 0u);
+    activity_led_pulse();
     return true;
 }
 
@@ -223,6 +252,7 @@ static bool gpib_read_stream(bool stop_on_eoi, int terminator)
         }
         putchar_raw(byte);
         if ((stop_on_eoi && eoi) || (!stop_on_eoi && byte == (uint8_t)terminator)) {
+            error_led_set(false);
             return true;
         }
     }
@@ -253,6 +283,7 @@ static bool gpib_binary_write(uint32_t length)
     }
 
     gpib_set_listener();
+    error_led_set(false);
     return true;
 }
 
@@ -264,29 +295,29 @@ static bool gpib_read_ieee_block(uint32_t maximum_length)
 
     if (!gpib_address_for_read()) {
         gpib_set_listener();
-        puts("ERR: GPIB timeout before IEEE block");
+        report_adapter_error("ERR: GPIB timeout before IEEE block");
         return false;
     }
     if (!gpib_read_byte(&byte, &eoi)) {
         gpib_set_listener();
-        puts("ERR: GPIB timeout before IEEE block");
+        report_adapter_error("ERR: GPIB timeout before IEEE block");
         return false;
     }
     if (byte != '#') {
         gpib_set_listener();
-        puts("ERR: expected IEEE definite-length block");
+        report_adapter_error("ERR: expected IEEE definite-length block");
         return false;
     }
     header[0] = byte;
 
     if (!gpib_read_byte(&byte, &eoi)) {
         gpib_set_listener();
-        puts("ERR: GPIB timeout in IEEE block header");
+        report_adapter_error("ERR: GPIB timeout in IEEE block header");
         return false;
     }
     if (byte < '1' || byte > '9') {
         gpib_set_listener();
-        puts("ERR: expected IEEE definite-length block");
+        report_adapter_error("ERR: expected IEEE definite-length block");
         return false;
     }
     header[1] = byte;
@@ -296,19 +327,19 @@ static bool gpib_read_ieee_block(uint32_t maximum_length)
     for (uint8_t i = 0; i < length_digits; ++i) {
         if (!gpib_read_byte(&byte, &eoi)) {
             gpib_set_listener();
-            puts("ERR: GPIB timeout in IEEE block length");
+            report_adapter_error("ERR: GPIB timeout in IEEE block length");
             return false;
         }
         if (byte < '0' || byte > '9') {
             gpib_set_listener();
-            puts("ERR: invalid IEEE block length");
+            report_adapter_error("ERR: invalid IEEE block length");
             return false;
         }
         header[2u + i] = byte;
         uint32_t digit = (uint32_t)(byte - '0');
         if (payload_length > (UINT32_MAX - digit) / 10u) {
             gpib_set_listener();
-            puts("ERR: IEEE block length overflow");
+            report_adapter_error("ERR: IEEE block length overflow");
             return false;
         }
         payload_length = payload_length * 10u + digit;
@@ -316,7 +347,7 @@ static bool gpib_read_ieee_block(uint32_t maximum_length)
 
     if (payload_length > maximum_length) {
         gpib_set_listener();
-        puts("ERR: IEEE block exceeds requested maximum");
+        report_adapter_error("ERR: IEEE block exceeds requested maximum");
         return false;
     }
 
@@ -346,6 +377,7 @@ static bool gpib_read_ieee_block(uint32_t maximum_length)
     }
 
     gpib_set_listener();
+    error_led_set(false);
     return true;
 }
 
@@ -376,6 +408,7 @@ static bool gpib_write_text(const char *text)
     }
 
     gpib_set_listener();
+    error_led_set(false);
     return true;
 }
 
@@ -393,7 +426,11 @@ static bool gpib_serial_poll(uint8_t address, uint8_t *status)
     }
 
     const uint8_t finish[] = {0x19u, 0x5Fu};
-    return gpib_send_commands(finish, sizeof(finish));
+    if (!gpib_send_commands(finish, sizeof(finish))) {
+        return false;
+    }
+    error_led_set(false);
+    return true;
 }
 
 static bool parse_uint(const char *text, uint32_t maximum, uint32_t *value)
@@ -409,6 +446,7 @@ static bool parse_uint(const char *text, uint32_t maximum, uint32_t *value)
 
 static void report_bus_error(void)
 {
+    error_led_set(true);
     printf("ERR: GPIB timeout during %s: %s (GPIO=0x%08lx)\r\n",
            gpib_phase, gpib_timeout_reason,
            (unsigned long)gpib_timeout_gpio_state);
@@ -432,7 +470,7 @@ static void handle_adapter_command(char *line)
         } else if (parse_uint(argument, 30u, &value)) {
             gpib_address = (uint8_t)value;
         } else {
-            puts("ERR: address must be 0-30");
+            report_adapter_error("ERR: address must be 0-30");
         }
     } else if (strcmp(command, "++auto") == 0) {
         if (argument == NULL) {
@@ -440,7 +478,7 @@ static void handle_adapter_command(char *line)
         } else if (parse_uint(argument, 1u, &value)) {
             gpib_auto_read = value != 0u;
         } else {
-            puts("ERR: auto must be 0 or 1");
+            report_adapter_error("ERR: auto must be 0 or 1");
         }
     } else if (strcmp(command, "++eoi") == 0) {
         if (argument == NULL) {
@@ -448,7 +486,7 @@ static void handle_adapter_command(char *line)
         } else if (parse_uint(argument, 1u, &value)) {
             gpib_eoi_enabled = value != 0u;
         } else {
-            puts("ERR: eoi must be 0 or 1");
+            report_adapter_error("ERR: eoi must be 0 or 1");
         }
     } else if (strcmp(command, "++eos") == 0) {
         if (argument == NULL) {
@@ -456,7 +494,7 @@ static void handle_adapter_command(char *line)
         } else if (parse_uint(argument, 3u, &value)) {
             gpib_eos = (uint8_t)value;
         } else {
-            puts("ERR: eos must be 0-3");
+            report_adapter_error("ERR: eos must be 0-3");
         }
     } else if (strcmp(command, "++read_tmo_ms") == 0) {
         if (argument == NULL) {
@@ -464,7 +502,7 @@ static void handle_adapter_command(char *line)
         } else if (parse_uint(argument, 60000u, &value) && value > 0u) {
             gpib_read_timeout_ms = value;
         } else {
-            puts("ERR: timeout must be 1-60000 ms");
+            report_adapter_error("ERR: timeout must be 1-60000 ms");
         }
     } else if (strcmp(command, "++ifc") == 0) {
         gpio_put(GPIB_IFC_PIN, 0u);
@@ -483,7 +521,7 @@ static void handle_adapter_command(char *line)
         char *length_argument = strtok(NULL, " \t");
         if (operation == NULL || length_argument == NULL ||
             !parse_uint(length_argument, GPIB_MAX_BINARY_LENGTH, &value)) {
-            puts("ERR: use ++bin read <maxlen> or ++bin write <len>");
+            report_adapter_error("ERR: use ++bin read <maxlen> or ++bin write <len>");
         } else if (strcmp(operation, "write") == 0) {
             if (!gpib_binary_write(value)) {
                 report_bus_error();
@@ -491,13 +529,13 @@ static void handle_adapter_command(char *line)
         } else if (strcmp(operation, "read") == 0) {
             (void)gpib_read_ieee_block(value);
         } else {
-            puts("ERR: use ++bin read <maxlen> or ++bin write <len>");
+            report_adapter_error("ERR: use ++bin read <maxlen> or ++bin write <len>");
         }
     } else if (strcmp(command, "++spoll") == 0) {
         uint32_t address = gpib_address;
         uint8_t status;
         if (argument != NULL && !parse_uint(argument, 30u, &address)) {
-            puts("ERR: address must be 0-30");
+            report_adapter_error("ERR: address must be 0-30");
         } else if (!gpib_serial_poll((uint8_t)address, &status)) {
             report_bus_error();
         } else {
@@ -522,10 +560,10 @@ static void handle_adapter_command(char *line)
         if (argument == NULL || strcmp(argument, "1") == 0) {
             puts("1");
         } else {
-            puts("ERR: controller mode only");
+            report_adapter_error("ERR: controller mode only");
         }
     } else {
-        puts("ERR: unsupported command");
+        report_adapter_error("ERR: unsupported command");
     }
 }
 
@@ -562,6 +600,12 @@ int main(void)
     gpib_gpio_init();
 
     while (true) {
+        if (activity_led_deadline_us != 0u &&
+            time_us_64() >= activity_led_deadline_us) {
+            gpio_put(LED_ACTIVITY_PIN, 0u);
+            activity_led_deadline_us = 0u;
+        }
+
         int ch = getchar_timeout_us(0u);
         if (ch == PICO_ERROR_TIMEOUT) {
             tight_loop_contents();
@@ -572,7 +616,7 @@ int main(void)
                 line[line_length] = '\0';
                 handle_usb_line(line);
             } else if (line_overflow) {
-                puts("ERR: command too long");
+                report_adapter_error("ERR: command too long");
             }
             line_length = 0u;
             line_overflow = false;

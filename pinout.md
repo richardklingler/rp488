@@ -27,8 +27,10 @@ the firmware definitions and the pin map in `gpib-usb-adapter.md`.
 | TE | GPIO16 | 21 | SN75160B/SN75161B transceiver control output |
 | PE | GPIO17 | 22 | SN75160B transceiver control output |
 | DC | GPIO18 | 24 | SN75161B transceiver control output |
+| Activity LED | GPIO19 | 25 | Output; active high through a series resistor |
+| Error LED | GPIO20 | 26 | Output; active high through a series resistor; latches until a successful GPIB operation |
 
-GPIO19-22 are unused by this pinout and remain available for later expansion.
+GPIO21-22 remain unused by this pinout and are available for later expansion.
 
 ## Power and Ground
 
@@ -64,6 +66,8 @@ where possible.
 - For normal operation, the design guide specifies DC low, PE high, and TE
   selected for talker or listener operation. See the transceiver truth tables
   in `gpib-usb-adapter.md` before wiring or testing the control logic.
+- Connect each LED from its GPIO through its own series resistor (about 1 kΩ)
+  to ground. Do not connect indicator LEDs directly to GPIB bus lines.
 
 This is the proposed signal assignment, not a verified J2-to-Pico cable
 schedule. Confirm the J2 connections against the actual schematic before
