@@ -16,3 +16,13 @@
 
 # macOS metadata
 .DS_Store
+
+# KiCad local settings, locks, caches, and backups
+*-backups/
+*.kicad_prl
+*.lck
+*.kicad_*-bak
+fp-info-cache
+
+# KiCad simulator output
+*.raw

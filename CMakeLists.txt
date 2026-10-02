@@ -38,6 +38,12 @@ pico_enable_stdio_uart(buslink_gpib_adapter 0)
 # USB IDs: pid.codes / USB-IF assignment used for this adapter
 # Vendor ID: 0x1209
 # Product ID: 0x5305
-add_compile_definitions(USBD_VID=0x1209 USBD_PID=0x5305)
+add_compile_definitions(
+    USBD_VID=0x1209
+    USBD_PID=0x5305
+    USBD_DESC_STR_MAX=32
+    "USBD_MANUFACTURER=\"Klingler Engineering\""
+    "USBD_PRODUCT=\"RP488\""
+)
 
 pico_add_extra_outputs(buslink_gpib_adapter)
