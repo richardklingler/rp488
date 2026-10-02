@@ -1,6 +1,6 @@
 # BusLink USB-GPIB Adapter
 
-This project is an RP2350-based USB GPIB adapter matching the design in `gpib-usb-adapter.md`.
+This project is an RP2350-based USB GPIB adapter.
 
 ## USB identifiers
 
