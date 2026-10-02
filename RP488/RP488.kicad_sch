@@ -6317,6 +6317,16 @@
 	)
 	(wire
 		(pts
+			(xy 49.53 173.99) (xy 49.53 175.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1a21ab60-377b-447b-befe-412ac63163d2")
+	)
+	(wire
+		(pts
 			(xy 86.36 57.15) (xy 86.36 58.42)
 		)
 		(stroke
@@ -7317,6 +7327,16 @@
 	)
 	(wire
 		(pts
+			(xy 49.53 182.88) (xy 49.53 184.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "94f5a111-cadb-4490-919b-4d699dffeb7f")
+	)
+	(wire
+		(pts
 			(xy 41.91 88.9) (xy 41.91 101.6)
 		)
 		(stroke
@@ -7414,6 +7434,16 @@
 			(type default)
 		)
 		(uuid "a603a076-c215-48d1-913c-3887379d75a1")
+	)
+	(wire
+		(pts
+			(xy 33.02 182.88) (xy 33.02 184.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a60bc04a-1172-4cc1-9469-943dd7bf3532")
 	)
 	(wire
 		(pts
@@ -7727,6 +7757,16 @@
 	)
 	(wire
 		(pts
+			(xy 33.02 173.99) (xy 33.02 175.26)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ca242398-a88a-43b4-a7e3-aa4ffd2af499")
+	)
+	(wire
+		(pts
 			(xy 233.68 90.17) (xy 241.3 90.17)
 		)
 		(stroke
@@ -7884,6 +7924,16 @@
 			(type default)
 		)
 		(uuid "e361c80b-0bb5-428c-99e4-612b4a45bba3")
+	)
+	(wire
+		(pts
+			(xy 203.2 74.93) (xy 217.17 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e4c9fc19-7d95-4fe7-b21a-6ffe190b394e")
 	)
 	(wire
 		(pts
@@ -10900,6 +10950,160 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GNDD")
+		(at 33.02 184.15 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "23b1e8ab-b7e6-4230-849d-b985d0017198")
+		(property "Reference" "#PWR0133"
+			(at 33.02 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDD"
+			(at 33.1216 188.087 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 33.02 184.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 33.02 184.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 33.02 184.15 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f73442b7-98c8-48d3-94ab-002e375466ad")
+		)
+		(instances
+			(project "RP488"
+				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
+					(reference "#PWR0133")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 49.53 173.99 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "32d40c61-f8da-42e5-8b5c-01975a1c126e")
+		(property "Reference" "#PWR012"
+			(at 49.53 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 49.53 168.91 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Package_DFN_QFN:Diodes_UDFN3810-9_TYPE_B"
+			(at 49.53 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 49.53 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 49.53 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8c5cbdaf-8ffc-4f09-b831-45bfadfbf7d5")
+		)
+		(instances
+			(project "RP488"
+				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
+					(reference "#PWR012")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 100.33 179.07 0)
 		(unit 1)
@@ -11138,6 +11342,86 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 49.53 179.07 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "4c708c6f-b563-4768-9a94-c8d151ef495b")
+		(property "Reference" "C15"
+			(at 52.451 177.9016 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100n"
+			(at 52.451 180.213 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 50.4952 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 49.53 179.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 49.53 179.07 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "65d8acf8-e51e-4371-af20-1fc2097af6f2")
+		)
+		(pin "2"
+			(uuid "e6ad8665-d185-462e-a2b4-55428a9417f4")
+		)
+		(instances
+			(project "RP488"
+				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
+					(reference "C15")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GNDD")
 		(at 38.1 102.87 0)
 		(unit 1)
@@ -11208,6 +11492,84 @@
 			(project "RP488"
 				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
 					(reference "#PWR0132")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 33.02 173.99 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4eadf1fe-27b7-43a9-adc6-deff1ac2967e")
+		(property "Reference" "#PWR011"
+			(at 33.02 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 33.02 168.91 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Package_DFN_QFN:Diodes_UDFN3810-9_TYPE_B"
+			(at 33.02 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 33.02 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 33.02 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "be6790f2-d373-4168-b1a6-15bb47d4f8c2")
+		)
+		(instances
+			(project "RP488"
+				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
+					(reference "#PWR011")
 					(unit 1)
 				)
 			)
@@ -12200,6 +12562,82 @@
 			(project "RP488"
 				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
 					(reference "#PWR0126")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDD")
+		(at 49.53 184.15 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "93d00f59-5162-4f43-845e-26ad1b631f7f")
+		(property "Reference" "#PWR0116"
+			(at 49.53 190.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDD"
+			(at 49.6316 188.087 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 49.53 184.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 49.53 184.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 49.53 184.15 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e83d5186-aeb2-45ea-86bc-d3b58b4f4250")
+		)
+		(instances
+			(project "RP488"
+				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
+					(reference "#PWR0116")
 					(unit 1)
 				)
 			)
@@ -14498,6 +14936,86 @@
 			(project "RP488"
 				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
 					(reference "C6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 33.02 179.07 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f64a56c8-bf5b-4a76-9fb5-eab2d8903f97")
+		(property "Reference" "C14"
+			(at 35.941 177.9016 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100n"
+			(at 35.941 180.213 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 33.9852 182.88 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 33.02 179.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 33.02 179.07 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "173287d2-e0f9-4800-bcc5-1ed55bae671c")
+		)
+		(pin "2"
+			(uuid "4faf34f5-83da-461f-b3a8-0b75185ae032")
+		)
+		(instances
+			(project "RP488"
+				(path "/3b6c71c4-8a93-4466-8fec-b87af057059d"
+					(reference "C14")
 					(unit 1)
 				)
 			)

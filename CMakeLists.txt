@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
-# Select the Pico 2 W target before the SDK initializes it.
-set(PICO_BOARD pico2_w)
+set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/boards)
+set(PICO_BOARD rp488)
 set(PICO_PLATFORM rp2350)
 
 # Configure the Pico SDK before project()
