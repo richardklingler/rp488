@@ -2,6 +2,8 @@
 
 This project is an RP2350-based USB GPIB adapter.
 
+![PCB 3D View](rp488.png)
+
 ## USB identifiers
 
 - Vendor ID: `0x1209`
@@ -9,7 +11,7 @@ This project is an RP2350-based USB GPIB adapter.
 
 ## Hardware target
 
-- Raspberry Pi Pico 2 W
+- Raspberry Pi Pico 2 W, RP2354
 - SN75160B data transceiver
 - SN75161B control transceiver
 - GPIB bus interface using negative-true logic
