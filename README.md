@@ -16,6 +16,17 @@ This project is an RP2350-based USB GPIB adapter.
 - SN75161B control transceiver
 - GPIB bus interface using negative-true logic
 
+## Hardware
+
+The firmware was tested with the Raspberry Pico 2 W development board and an external GPIB transceiver board.
+Firmware should work with all RP2350 variants, including the new RP2354 with built-in 2MB flash.
+
+Hardware design is of course made with KiCAD and is curretnly in the works.
+
+You find the hardware related files in the "Hardware" folder.
+
+![PCB 3D View](RP488_Schematic.png)
+
 ## Firmware goals
 
 - CDC ACM serial interface on USB
