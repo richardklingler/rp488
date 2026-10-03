@@ -23,6 +23,10 @@ I was able to control the scope and download a binary screenshot as TIFF on macO
 
 ![Test setup](pico2w_test.jpeg)
 
+Waveform screenshot taken via binary GPIB transfer:
+
+![Waveform Capture](waveform.png)
+
 
 ## Hardware
 
