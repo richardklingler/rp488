@@ -10365,10 +10365,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "05ce2d9a-425a-4279-b9be-9ab8b2951801")
 		(property "Reference" "R3"
-			(at 64.77 67.31 90)
+			(at 64.516 71.374 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10378,7 +10377,7 @@
 			)
 		)
 		(property "Value" "27R"
-			(at 64.77 69.85 90)
+			(at 65.024 76.2 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11193,10 +11192,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "41a19618-d2d6-44bf-a41c-948245983aa3")
 		(property "Reference" "R5"
-			(at 177.8 139.7 90)
+			(at 177.8 143.51 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11206,7 +11204,7 @@
 			)
 		)
 		(property "Value" "1K"
-			(at 177.8 142.24 90)
+			(at 177.8 148.59 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11757,10 +11755,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "637ad046-27d2-4c02-bb37-457231a443c1")
 		(property "Reference" "L1"
-			(at 124.46 41.9099 0)
+			(at 123.444 34.544 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -11770,8 +11767,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "L"
-			(at 124.46 44.4499 0)
+		(property "Value" "3u3"
+			(at 123.19 36.576 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13040,10 +13037,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "aa9c1e13-7c0b-44d5-b25e-095779c83fd6")
 		(property "Reference" "R2"
-			(at 64.77 95.25 90)
+			(at 64.77 99.314 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13053,7 +13049,7 @@
 			)
 		)
 		(property "Value" "27R"
-			(at 64.77 97.79 90)
+			(at 64.77 104.14 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13357,10 +13353,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "b24115f3-bd6c-4146-8c5d-c13162cefcaf")
 		(property "Reference" "R6"
-			(at 177.8 147.32 90)
+			(at 177.546 151.384 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -13370,7 +13365,7 @@
 			)
 		)
 		(property "Value" "1K"
-			(at 177.8 149.86 90)
+			(at 177.8 156.21 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -14424,7 +14419,7 @@
 		(dnp no)
 		(uuid "da5b5de4-a248-4d87-8bf4-bbbe01e0dc36")
 		(property "Reference" "D1"
-			(at 170.4975 139.7 0)
+			(at 168.91 140.97 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -14433,8 +14428,8 @@
 				)
 			)
 		)
-		(property "Value" "LED"
-			(at 170.4975 142.24 0)
+		(property "Value" "Activity"
+			(at 168.91 143.256 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -14515,7 +14510,7 @@
 		(dnp no)
 		(uuid "dcec5d29-3140-43de-8040-38e4002ab84e")
 		(property "Reference" "D2"
-			(at 170.4975 147.32 0)
+			(at 168.91 156.718 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -14524,8 +14519,8 @@
 				)
 			)
 		)
-		(property "Value" "LED"
-			(at 170.4975 149.86 0)
+		(property "Value" "Error"
+			(at 169.164 159.004 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
