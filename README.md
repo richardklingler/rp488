@@ -1,4 +1,4 @@
-# BusLink USB-GPIB Adapter
+# RP488 USB-GPIB Adapter
 
 This project is an RP2350-based USB GPIB adapter.
 
@@ -15,6 +15,14 @@ This project is an RP2350-based USB GPIB adapter.
 - SN75160B data transceiver
 - SN75161B control transceiver
 - GPIB bus interface using negative-true logic
+
+## Test
+
+The design was tested with a Raspberry Pi Pico 2 W board and an attached Yokogawa DL1540C 4-channel scope.
+I was able to control the scope and download a binary screenshot as TIFF on macOS 27 with a simple Python script located in folder "test".
+
+![Test setup](pico2w_test.jpeg)
+
 
 ## Hardware
 
