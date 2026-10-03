@@ -2,7 +2,7 @@
 
 This project is an RP2350-based USB GPIB adapter.
 
-![PCB 3D View](rp488.png)
+![PCB 3D View](RP488.png)
 
 ## USB identifiers
 
